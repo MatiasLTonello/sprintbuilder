@@ -1,5 +1,5 @@
 'use client'
-import { Box, VStack, HStack, Button, Modal, ModalOverlay, ModalContent, ModalHeader, ModalCloseButton, ModalBody, ModalFooter, Input, useDisclosure, Tooltip } from "@chakra-ui/react";
+import { Box, VStack, HStack, Button, Modal, ModalOverlay, ModalContent, ModalHeader, ModalCloseButton, ModalBody, ModalFooter, Input, useDisclosure } from "@chakra-ui/react";
 import { Phase } from "./components/Phase";
 import { SprintLabel } from "./components/SprintLabel";
 import { useState } from "react";

@@ -1,6 +1,4 @@
-// src/app/layout.tsx
 import { ChakraProvider } from "@chakra-ui/react";
-import theme from "./theme"; // Si tienes un tema personalizado
 import "./globals.css";
 
 export const metadata = {
