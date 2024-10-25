@@ -1,95 +1,113 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+'use client'
+import { Box, VStack, HStack, Button, Modal, ModalOverlay, ModalContent, ModalHeader, ModalCloseButton, ModalBody, ModalFooter, Input, useDisclosure, Tooltip } from "@chakra-ui/react";
+import { Phase } from "./components/Phase";
+import { SprintLabel } from "./components/SprintLabel";
+import { useState } from "react";
 
 export default function Home() {
-  return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol>
-          <li>
-            Get started by editing <code>src/app/page.tsx</code>.
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [phases, setPhases] = useState([
+    { title: "Discovery", description: "Understanding the product.", start: 0, duration: 1, color: "Pink" },
+    { title: "Development", description: "Building the product.", start: 1, duration: 1, color: "Green" },
+    { title: "QA", description: "Testing the product.", start: 2, duration: 1, color: "Red" },
+    { title: "Client Testing", description: "Validating the product.", start: 3, duration: 1, color: "Yellow" },
+  ]);
+  const [totalSprints, setTotalSprints] = useState(4);
+  const [newPhase, setNewPhase] = useState({ title: "", description: "", start: 0, duration: 1, color: "" });
+  const { isOpen, onOpen, onClose } = useDisclosure();
 
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.secondary}
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className={styles.footer}>
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+  const sprintsLabel = Array.from({ length: totalSprints }, (_, i) => `Sprint ${i + 1}`);
+
+  const handleAddPhase = () => {
+    setPhases([...phases, newPhase]);
+    setNewPhase({ title: "", description: "", start: 0, duration: 1, color: "" });
+    onClose();
+  };
+
+  const handleChange = (e: any) => {
+    const { name, value } = e.target;
+    setNewPhase((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const increaseSprints = () => setTotalSprints(totalSprints + 1);
+  const decreaseSprints = () => setTotalSprints(Math.max(1, totalSprints - 1));
+
+  return (
+    <Box p={8} bg="white" minH="100vh">
+      <VStack spacing={4} align="stretch" maxW="1200px" mx="auto">
+        <HStack mb={2}>
+          {sprintsLabel.map((label, index) => (
+            <SprintLabel key={index} label={label} totalSprints={totalSprints} />
+          ))}
+        </HStack>
+        {phases.map((phase, index) => (
+          <Phase key={index} totalSprints={totalSprints} phase={phase} index={index + 1}/>
+        ))}
+        
+        <HStack spacing={4} mt={4}>
+          <Button colorScheme="teal" onClick={onOpen}>
+            Agregar Fase
+          </Button>
+          <Button colorScheme="blue" onClick={increaseSprints}>
+            Aumentar Sprints
+          </Button>
+          <Button colorScheme="red" onClick={decreaseSprints}>
+            Disminuir Sprints
+          </Button>
+        </HStack>
+
+        <Modal isOpen={isOpen} onClose={onClose}>
+          <ModalOverlay />
+          <ModalContent>
+            <ModalHeader>Agregar Nueva Fase</ModalHeader>
+            <ModalCloseButton />
+            <ModalBody>
+              <Input
+                placeholder="Título"
+                name="title"
+                value={newPhase.title}
+                onChange={handleChange}
+                mb={3}
+              />
+              <Input
+                placeholder="Descripción"
+                name="description"
+                value={newPhase.description}
+                onChange={handleChange}
+                mb={3}
+              />
+              <Input
+                placeholder="Inicio"
+                name="start"
+                type="number"
+                value={newPhase.start}
+                onChange={handleChange}
+                mb={3}
+              />
+              <Input
+                placeholder="Duración"
+                name="duration"
+                type="number"
+                value={newPhase.duration}
+                onChange={handleChange}
+                mb={3}
+              />
+              <Input
+                placeholder="Color"
+                name="color"
+                value={newPhase.color}
+                onChange={handleChange}
+                mb={3}
+              />
+            </ModalBody>
+            <ModalFooter>
+              <Button colorScheme="blue" mr={3} onClick={handleAddPhase}>
+                Guardar Fase
+              </Button>
+              <Button variant="ghost" onClick={onClose}>Cancelar</Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
+      </VStack>
+    </Box>
   );
 }
