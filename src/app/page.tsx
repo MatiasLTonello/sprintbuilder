@@ -28,54 +28,65 @@ import {
   Tooltip,
   useColorModeValue,
 } from "@chakra-ui/react";
-import { Phase } from "./components/Phase";
+import { Row } from "./components/Row";
 import { SprintLabel } from "./components/SprintLabel";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import { Phase } from "@/app/components/Phase";
 import { ChromePicker } from "react-color";
 
 export default function Home() {
   const [phases, setPhases] = useState([
     {
+      id: 1,
       title: "Discovery",
       description: "Understanding the product.",
       start: 0,
       duration: 1,
       color: "pink.400",
+      row: 2,
     },
     {
+      id: 2,
       title: "Development",
       description: "Building the product.",
       start: 1,
       duration: 1,
       color: "green.400",
+      row: 1,
     },
     {
+      id: 3,
       title: "QA",
       description: "Testing the product.",
       start: 2,
       duration: 1,
       color: "red.400",
+      row: 2,
     },
     {
+      id: 4,
       title: "Client Testing",
       description: "Validating the product.",
       start: 3,
       duration: 1,
       color: "yellow.400",
+      row: 4,
     },
   ]);
 
   const [totalSprints, setTotalSprints] = useState(4);
   const [newPhase, setNewPhase] = useState({
+    id: phases.length + 1,
     title: "",
     description: "",
     start: 0,
     duration: 1,
     color: "blue.400",
+    row: 1,
   });
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [showColorPicker, setShowColorPicker] = useState(false);
-
+  const [rows, setRows] = useState(1);
   const bgColor = useColorModeValue("gray.50", "gray.800");
   const cardBgColor = useColorModeValue("white", "gray.700");
 
@@ -87,20 +98,23 @@ export default function Home() {
   const handleAddPhase = () => {
     setPhases([...phases, newPhase]);
     setNewPhase({
+      id: phases.length + 1,
       title: "",
       description: "",
       start: 0,
       duration: Number(1),
       color: "blue.400",
+      row: 1,
     });
     onClose();
   };
 
-  const handleUpdatePhase = (index, updatedPhase) => {
-    const updatedPhases = phases.map((phase, i) =>
-      i === index ? { ...phase, ...updatedPhase } : phase
+  const handleUpdatePhase = (updatedPhase) => {
+    setPhases((prevPhases) =>
+      prevPhases.map((phase) =>
+        phase.id === updatedPhase.id ? { ...phase, ...updatedPhase } : phase
+      )
     );
-    setPhases(updatedPhases);
   };
 
   const handleChange = (e) => {
@@ -122,7 +136,16 @@ export default function Home() {
 
   const increaseSprints = () => setTotalSprints(totalSprints + 1);
   const decreaseSprints = () => setTotalSprints(Math.max(1, totalSprints - 1));
+  const increaseRows = () => setRows((prev) => prev + 1);
+  const decreaseRows = () => setRows((prev) => Math.max(1, prev - 1));
+  const [containerWidth, setContainerWidth] = useState(0);
+  const containerRef = useRef(null);
 
+  useEffect(() => {
+    if (containerRef.current) {
+      setContainerWidth(containerRef.current.clientWidth);
+    }
+  }, []);
   return (
     <Box p={8} bg={bgColor} minH="100vh">
       <VStack spacing={4} align="stretch" maxW="1200px" mx="auto">
@@ -135,16 +158,26 @@ export default function Home() {
             />
           ))}
         </HStack>
-
-        {phases.map((phase, index) => (
-          <Phase
-            key={index}
+        {Array.from({ length: rows }, (_, rowIndex) => (
+          <Row
+            containerRef={containerRef}
+            key={rowIndex}
             totalSprints={totalSprints}
-            phase={phase}
-            index={index}
-            handleDeletePhase={handleDeletePhase}
-            onUpdatePhase={handleUpdatePhase}
-          />
+          >
+            {phases
+              .filter((phase) => phase.row === rowIndex + 1)
+              .map((phase) => (
+                <Phase
+                  totalSprints={totalSprints}
+                  handleDeletePhase={handleDeletePhase}
+                  phase={phase}
+                  key={phase.id}
+                  onUpdatePhase={handleUpdatePhase}
+                  containerWidth={containerWidth}
+                  totalRows={rows}
+                />
+              ))}
+          </Row>
         ))}
 
         <HStack spacing={4} mt={4}>
@@ -156,6 +189,12 @@ export default function Home() {
           </Button>
           <Button colorScheme="red" onClick={decreaseSprints}>
             Disminuir Sprints
+          </Button>
+          <Button colorScheme="blue" onClick={increaseRows}>
+            Aumentar Rows
+          </Button>
+          <Button colorScheme="red" onClick={decreaseRows}>
+            Disminuir Rows
           </Button>
         </HStack>
 
