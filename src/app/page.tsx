@@ -16,23 +16,31 @@ import {
   FormControl,
   FormLabel,
   Textarea,
-  NumberInput,
-  NumberInputField,
-  NumberInputStepper,
-  NumberIncrementStepper,
-  NumberDecrementStepper,
-  Slider,
-  SliderTrack,
-  SliderFilledTrack,
-  SliderThumb,
-  Tooltip,
   useColorModeValue,
+  IconButton,
 } from "@chakra-ui/react";
 import { Row } from "./components/Row";
 import { SprintLabel } from "./components/SprintLabel";
 import { useState, useEffect, useRef } from "react";
 import { Phase } from "@/app/components/Phase";
 import { ChromePicker } from "react-color";
+import {
+  AddIcon,
+  ChevronUpIcon,
+  ChevronDownIcon,
+  ViewIcon,
+  ViewOffIcon,
+} from "@chakra-ui/icons";
+
+interface Phase {
+  id: number;
+  title: string;
+  description: string;
+  start: number;
+  duration: number;
+  color: string;
+  row: number;
+}
 
 export default function Home() {
   const [phases, setPhases] = useState([
@@ -84,9 +92,14 @@ export default function Home() {
     color: "blue.400",
     row: 1,
   });
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [containerWidth, setContainerWidth] = useState(0);
   const [showColorPicker, setShowColorPicker] = useState(false);
-  const [rows, setRows] = useState(1);
+  const [isUserView, setIsUserView] = useState(false);
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const maxRow = Math.max(...phases.map((phase) => phase.row));
+  const [rows, setRows] = useState(maxRow);
+
+  const containerRef = useRef<HTMLDivElement>(null);
   const bgColor = useColorModeValue("gray.50", "gray.800");
   const cardBgColor = useColorModeValue("white", "gray.700");
 
@@ -96,20 +109,20 @@ export default function Home() {
   );
 
   const handleAddPhase = () => {
-    setPhases([...phases, newPhase]);
+    setPhases([...phases, { ...newPhase, row: rows }]);
     setNewPhase({
-      id: phases.length + 1,
+      id: phases.length + 2,
       title: "",
       description: "",
       start: 0,
-      duration: Number(1),
+      duration: 1,
       color: "blue.400",
-      row: 1,
+      row: rows + 1,
     });
     onClose();
   };
 
-  const handleUpdatePhase = (updatedPhase) => {
+  const handleUpdatePhase = (updatedPhase: Phase) => {
     setPhases((prevPhases) =>
       prevPhases.map((phase) =>
         phase.id === updatedPhase.id ? { ...phase, ...updatedPhase } : phase
@@ -117,20 +130,18 @@ export default function Home() {
     );
   };
 
-  const handleChange = (e) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
     setNewPhase((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleDurationChange = (value) => {
-    setNewPhase((prev) => ({ ...prev, duration: parseFloat(value) }));
+  const handleDeletePhase = (id: number) => {
+    setPhases((prevPhases) => prevPhases.filter((phase) => phase.id !== id));
   };
 
-  const handleDeletePhase = (index) => {
-    setPhases((prevPhases) => prevPhases.filter((_, i) => i !== index));
-  };
-
-  const handleColorChange = (color) => {
+  const handleColorChange = (color: { hex: string }) => {
     setNewPhase((prev) => ({ ...prev, color: color.hex }));
   };
 
@@ -138,17 +149,26 @@ export default function Home() {
   const decreaseSprints = () => setTotalSprints(Math.max(1, totalSprints - 1));
   const increaseRows = () => setRows((prev) => prev + 1);
   const decreaseRows = () => setRows((prev) => Math.max(1, prev - 1));
-  const [containerWidth, setContainerWidth] = useState(0);
-  const containerRef = useRef(null);
 
   useEffect(() => {
     if (containerRef.current) {
       setContainerWidth(containerRef.current.clientWidth);
     }
   }, []);
+
+  const isFormComplete = ["title", "description"].every(
+    (field) => newPhase[field].trim() !== ""
+  );
   return (
     <Box p={8} bg={bgColor} minH="100vh">
       <VStack spacing={4} align="stretch" maxW="1200px" mx="auto">
+        <IconButton
+          css={{ position: "absolute", top: "20px", right: "50px" }}
+          colorScheme="blue"
+          aria-label="Search database"
+          icon={isUserView ? <ViewIcon /> : <ViewOffIcon />}
+          onClick={() => setIsUserView(!isUserView)}
+        />
         <HStack mb={2}>
           {sprintsLabel.map((label, index) => (
             <SprintLabel
@@ -175,123 +195,99 @@ export default function Home() {
                   onUpdatePhase={handleUpdatePhase}
                   containerWidth={containerWidth}
                   totalRows={rows}
+                  isUserView={isUserView}
                 />
               ))}
           </Row>
         ))}
 
-        <HStack spacing={4} mt={4}>
-          <Button colorScheme="teal" onClick={onOpen}>
-            Agregar Fase
-          </Button>
-          <Button colorScheme="blue" onClick={increaseSprints}>
-            Aumentar Sprints
-          </Button>
-          <Button colorScheme="red" onClick={decreaseSprints}>
-            Disminuir Sprints
-          </Button>
-          <Button colorScheme="blue" onClick={increaseRows}>
-            Aumentar Rows
-          </Button>
-          <Button colorScheme="red" onClick={decreaseRows}>
-            Disminuir Rows
-          </Button>
-        </HStack>
-
-        <Modal isOpen={isOpen} onClose={onClose} size="xl">
-          <ModalOverlay />
-          <ModalContent bg={cardBgColor}>
-            <ModalHeader>Agregar Nueva Fase</ModalHeader>
-            <ModalCloseButton />
-            <ModalBody>
-              <VStack spacing={4}>
-                <FormControl>
-                  <FormLabel>Título</FormLabel>
-                  <Input
-                    placeholder="Ej: Desarrollo"
-                    name="title"
-                    value={newPhase.title}
-                    onChange={handleChange}
-                  />
-                </FormControl>
-
-                <FormControl>
-                  <FormLabel>Descripción</FormLabel>
-                  <Textarea
-                    placeholder="Breve descripción de la fase"
-                    name="description"
-                    value={newPhase.description}
-                    onChange={handleChange}
-                  />
-                </FormControl>
-
-                <FormControl>
-                  <FormLabel>Sprint de inicio</FormLabel>
-                  <NumberInput
-                    min={0}
-                    max={totalSprints - 1}
-                    value={Number(newPhase.start)}
-                    onChange={(value) =>
-                      setNewPhase((prev) => ({
-                        ...prev,
-                        start: parseInt(value),
-                      }))
-                    }
-                  >
-                    <NumberInputField />
-                    <NumberInputStepper>
-                      <NumberIncrementStepper />
-                      <NumberDecrementStepper />
-                    </NumberInputStepper>
-                  </NumberInput>
-                </FormControl>
-
-                <FormControl>
-                  <FormLabel>Duración (en sprints)</FormLabel>
-                  <Slider
-                    min={0.25}
-                    max={totalSprints}
-                    step={0.25}
-                    value={Number(newPhase.duration)}
-                    onChange={handleDurationChange}
-                  >
-                    <SliderTrack>
-                      <SliderFilledTrack />
-                    </SliderTrack>
-                    <Tooltip label={newPhase.duration} placement="top" isOpen>
-                      <SliderThumb />
-                    </Tooltip>
-                  </Slider>
-                </FormControl>
-
-                <FormControl>
-                  <FormLabel>Color</FormLabel>
-                  <Button
-                    onClick={() => setShowColorPicker(!showColorPicker)}
-                    bg={newPhase.color}
-                    color={newPhase.color === "#FFFFFF" ? "black" : "white"}
-                  >
-                    {showColorPicker ? "Cerrar" : "Elegir Color"}
-                  </Button>
-                  {showColorPicker && (
-                    <ChromePicker
-                      color={newPhase.color}
-                      onChangeComplete={handleColorChange}
-                    />
-                  )}
-                </FormControl>
+        {!isUserView && (
+          <>
+            <HStack spacing={4} mt={4} alignItems={"baseline"}>
+              <Button colorScheme="teal" onClick={onOpen}>
+                <AddIcon mr={2} /> Agregar Fase
+              </Button>
+              <VStack>
+                <Button colorScheme="blue" onClick={increaseSprints}>
+                  <ChevronUpIcon mr={2} /> Aumentar Sprints
+                </Button>
+                <Button colorScheme="red" onClick={decreaseSprints}>
+                  <ChevronDownIcon mr={2} /> Disminuir Sprints
+                </Button>
               </VStack>
-            </ModalBody>
-            <ModalFooter>
-              <Button colorScheme="blue" mr={3} onClick={handleAddPhase}>
-                Agregar Fase
-              </Button>
-              <Button variant="ghost" onClick={onClose}>
-                Cancelar
-              </Button>
-            </ModalFooter>
-          </ModalContent>
-        </Modal>
+              <VStack>
+                <Button colorScheme="blue" onClick={increaseRows}>
+                  <ChevronUpIcon mr={2} /> Aumentar Rows
+                </Button>
+                <Button colorScheme="red" onClick={decreaseRows}>
+                  <ChevronDownIcon mr={2} /> Disminuir Rows
+                </Button>
+              </VStack>
+            </HStack>
+            <Modal isOpen={isOpen} onClose={onClose} size="sm">
+              <ModalOverlay />
+              <ModalContent bg={cardBgColor || "#f0f4f8"}>
+                <ModalHeader>Agregar Nueva Fase</ModalHeader>
+                <ModalCloseButton />
+                <ModalBody>
+                  <VStack spacing={4}>
+                    <FormControl isRequired>
+                      <FormLabel>Título</FormLabel>
+                      <Input
+                        required
+                        placeholder="Ej: Desarrollo"
+                        name="title"
+                        value={newPhase.title}
+                        onChange={handleChange}
+                      />
+                    </FormControl>
+
+                    <FormControl isRequired>
+                      <FormLabel>Descripción</FormLabel>
+                      <Textarea
+                        required
+                        placeholder="Breve descripción de la fase"
+                        name="description"
+                        value={newPhase.description}
+                        onChange={handleChange}
+                      />
+                    </FormControl>
+
+                    <FormControl>
+                      <FormLabel>Color</FormLabel>
+                      <Button
+                        onClick={() => setShowColorPicker(!showColorPicker)}
+                        bg={newPhase.color}
+                        color={newPhase.color === "#FFFFFF" ? "black" : "white"}
+                      >
+                        {showColorPicker ? "Cerrar" : "Elegir Color"}
+                      </Button>
+                      {showColorPicker && (
+                        <ChromePicker
+                          color={newPhase.color}
+                          onChangeComplete={handleColorChange}
+                        />
+                      )}
+                    </FormControl>
+                  </VStack>
+                </ModalBody>
+                <ModalFooter>
+                  <Button
+                    colorScheme="blue"
+                    mr={3}
+                    onClick={handleAddPhase}
+                    disabled={!isFormComplete}
+                  >
+                    Agregar Fase
+                  </Button>
+                  <Button variant="ghost" onClick={onClose}>
+                    Cancelar
+                  </Button>
+                </ModalFooter>
+              </ModalContent>
+            </Modal>
+          </>
+        )}
       </VStack>
     </Box>
   );
